@@ -18,6 +18,9 @@ public class Test8 {
         var flight = AirlineQuery.query();
         IO.println(flight);
 
+        var exceptions = AirlineQuery.exceptions();
+        IO.println(exceptions);
+
     }
 
 }

@@ -3,15 +3,18 @@ package com.acme.vt.helpers;
 import com.acme.vt.models.Flight;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.StructuredTaskScope;
-import java.util.stream.Stream;
 
 import static java.util.concurrent.StructuredTaskScope.Subtask.State.FAILED;
 import static java.util.concurrent.StructuredTaskScope.Subtask.State.SUCCESS;
 
 public class AirlineQuery {
+
+    private static AirlineJoiner airlineJoiner = new AirlineJoiner();
 
     static class AirlineException extends RuntimeException {
 
@@ -25,6 +28,12 @@ public class AirlineQuery {
         private List<StructuredTaskScope.Subtask<? extends Flight>> subtasks =
                 new ArrayList<>();
 
+        private volatile Collection<Flight> successes =
+                new ConcurrentLinkedQueue<>();
+
+        private volatile Collection<Throwable> failured =
+                new ConcurrentLinkedQueue<>();
+
         /**
          * OnFork method is running in the main thread.
          *
@@ -36,6 +45,26 @@ public class AirlineQuery {
             this.subtasks.add(subtask);
             return false;
             //return StructuredTaskScope.Joiner.super.onFork(subtask);
+        }
+
+        /**
+         * This method is called when the subTask is done.
+         * <br/>
+         * The onComplete callback is executed in the virtual thread that executed the corresponding task.
+         * However, remember that this method is not called when your scope is cancelled. So, you may loose
+         * tasks.
+         *
+         * @return
+         */
+        public boolean onComplete(StructuredTaskScope.Subtask<? extends Flight> subtask) {
+
+            if (subtask.state() == SUCCESS) {
+                this.successes.add(subtask.get());
+            } else if (subtask.state() == FAILED) {
+                this.failured.add(subtask.exception());
+            }
+
+            return false;
         }
 
         @Override
@@ -57,12 +86,17 @@ public class AirlineQuery {
 
             return exception;
         }
+
+    }
+
+    public static AirlineException exceptions() {
+        return airlineJoiner.exception();
     }
 
     public static Flight query() throws InterruptedException {
 
         try (var scope =
-                     StructuredTaskScope.open(new AirlineJoiner())) {
+                     StructuredTaskScope.open(airlineJoiner)) {
 
             /*var subTask1 = scope.fork(AirlineServer::readFromDAL);
             var subTask2 = scope.fork(AirlineServer::readFromGAL);
