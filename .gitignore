@@ -1,0 +1,17 @@
+# Maven build directory
+target/
+
+# Compiled Java class files
+*.class
+
+# Package files
+*.jar
+*.war
+*.nar
+*.ear
+
+### IntelliJ IDEA ###
+.idea/*.*
+*.iws
+*.iml
+*.ipr
