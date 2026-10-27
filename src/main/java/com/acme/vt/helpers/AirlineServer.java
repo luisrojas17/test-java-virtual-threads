@@ -21,9 +21,9 @@ public class AirlineServer {
 
     public static Flight readFromDAL() {
         //while(true) {}
-        waitFor(100, 15);
-        //throw new IllegalStateException("A test exception");
-        return new Flight("Diamond Airlines", priceFor(95, 15));
+        //waitFor(100, 15);
+        throw new IllegalStateException("A test exception");
+        //return new Flight("Diamond Airlines", priceFor(95, 15));
     }
 
     public static int priceFor(int median, int delta) {
